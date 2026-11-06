@@ -4,14 +4,11 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"the-core/core/authutil"
-	"the-core/core/http/request"
 
-	"github.com/gofiber/fiber/v3"
 	"gorm.io/gorm"
 )
 
-func PaginationScope(req request.PaginationRequest) func(db *gorm.DB) *gorm.DB {
+func PaginationScope(req PaginationRequest) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.
 			Limit(req.Size).
@@ -19,13 +16,13 @@ func PaginationScope(req request.PaginationRequest) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-func ActiveStatusScope(req request.IsAktifRequest) func(db *gorm.DB) *gorm.DB {
+func ActiveStatusScope(req IsAktifRequest) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Where("is_active = ?", req.IsAktif)
 	}
 }
 
-func IsDeletedScope(req request.IsDeleted) func(db *gorm.DB) *gorm.DB {
+func IsDeletedScope(req IsDeleted) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if req.IsDeleted == nil {
 			return db.Unscoped()
@@ -39,7 +36,7 @@ func IsDeletedScope(req request.IsDeleted) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-func SearchScope(req request.SearchRequest, fieldsToSearch ...string) func(db *gorm.DB) *gorm.DB {
+func SearchScope(req SearchRequest, fieldsToSearch ...string) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if req.Search == "" || len(fieldsToSearch) == 0 {
 			return db
@@ -60,19 +57,12 @@ func SearchScope(req request.SearchRequest, fieldsToSearch ...string) func(db *g
 	}
 }
 
-func SelfUserId(c fiber.Ctx) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("user_id = ?", authutil.GetUserId(c))
-	}
-}
-
 func FieldFilterScope(fieldFilters map[string]any) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		for field, filterValue := range fieldFilters {
 
 			val := reflect.ValueOf(filterValue)
 			if !val.IsValid() || (val.Kind() == reflect.Ptr && val.IsNil()) || (val.Kind() == reflect.Interface && val.IsNil()) {
-				// fmt.Printf("field filter for %s is nil, skipping\n", field)
 				continue
 			}
 

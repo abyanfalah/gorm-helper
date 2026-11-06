@@ -3,10 +3,7 @@ package gormhelper
 import (
 	"context"
 	"fmt"
-	"the-core/core/http/request"
-	"the-core/core/http/response"
 
-	"github.com/gofiber/fiber/v3/log"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -22,20 +19,20 @@ func FindByUUID[T any](ctx context.Context, db *gorm.DB, id uuid.UUID) (*T, erro
 	return &entity, err
 }
 
-func SearchWithPagination[T any](ctx context.Context, db *gorm.DB, req *request.SearchPaginationRequest, fieldsToSearch ...string) (response.PaginationWrapper[T], error) {
+func SearchWithPagination[T any](ctx context.Context, db *gorm.DB, req *SearchPaginationRequest, fieldsToSearch ...string) (PaginationWrapper[T], error) {
 	query := db.WithContext(ctx).Model(new(T)).Scopes(
 		SearchScope(req.SearchRequest, fieldsToSearch...),
 	)
 
 	result, err := Paginate[T](query, req.PaginationRequest)
 	if err != nil {
-		return response.PaginationWrapper[T]{}, err
+		return PaginationWrapper[T]{}, err
 	}
 
 	return result, nil
 }
 
-func FilteredSearchWithPagination[T any](ctx context.Context, db *gorm.DB, req *request.SearchPaginationRequest, fieldFilters map[string]any, fieldsToSearch ...string) (response.PaginationWrapper[T], error) {
+func FilteredSearchWithPagination[T any](ctx context.Context, db *gorm.DB, req *SearchPaginationRequest, fieldFilters map[string]any, fieldsToSearch ...string) (PaginationWrapper[T], error) {
 	query := db.WithContext(ctx).Model(new(T)).
 		Scopes(FieldFilterScope(fieldFilters)).
 		Scopes(SearchScope(req.SearchRequest, fieldsToSearch...))
@@ -46,10 +43,10 @@ func FilteredSearchWithPagination[T any](ctx context.Context, db *gorm.DB, req *
 func ModelFilteredSearchWithPagination[T any](
 	ctx context.Context,
 	db *gorm.DB,
-	req *request.SearchPaginationRequest,
+	req *SearchPaginationRequest,
 	filter T,
 	fieldsToSearch ...string,
-) (response.PaginationWrapper[T], error) {
+) (PaginationWrapper[T], error) {
 	query := db.
 		WithContext(ctx).
 		Model(new(T)).
@@ -67,14 +64,13 @@ func IsExistsBy[T any](ctx context.Context, db *gorm.DB, field string, value any
 	return count > 0, nil
 }
 
-func IsExistsById[T any](ctx context.Context, db *gorm.DB, id uint) bool {
+func IsExistsById[T any](ctx context.Context, db *gorm.DB, id uint) (bool, error) {
 	var count int64
 	err := db.WithContext(ctx).Model(new(T)).Where("id = ?", id).Count(&count).Error
 	if err != nil {
-		log.Error(err)
-		return false
+		return false, err
 	}
-	return count > 0
+	return count > 0, err
 }
 
 func FindBy[T any](ctx context.Context, db *gorm.DB, field string, value any) (*T, error) {
