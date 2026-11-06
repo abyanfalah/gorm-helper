@@ -1,4 +1,4 @@
-package gormhelper
+package github.com/abyanfalah/gorm-helper
 
 import "github.com/google/uuid"
 
