@@ -1,4 +1,4 @@
-package github.com/abyanfalah/gorm-helper
+package gormhelper
 
 import (
 	"context"
