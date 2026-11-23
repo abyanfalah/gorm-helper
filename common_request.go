@@ -20,7 +20,7 @@ type SearchRequest struct {
 }
 
 type IsDeleted struct {
-	IsDeleted *bool `json:"IsDeleted"`
+	IsDeleted *bool `json:"isDeleted"`
 }
 
 type IsAktifRequest struct {

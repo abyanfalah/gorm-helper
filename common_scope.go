@@ -2,7 +2,6 @@ package gormhelper
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"gorm.io/gorm"
@@ -10,15 +9,19 @@ import (
 
 func PaginationScope(req PaginationRequest) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		return db.
-			Limit(req.Size).
-			Offset(req.Page - 1)
+		page := max(req.Page, 1)
+		size := max(req.Size, 1)
+		offset := (page - 1) * size
+		return db.Limit(size).Offset(offset)
 	}
 }
 
 func ActiveStatusScope(req IsAktifRequest) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("is_active = ?", req.IsAktif)
+		if req.IsAktif == nil {
+			return db
+		}
+		return db.Where("is_active = ?", *req.IsAktif)
 	}
 }
 
@@ -27,11 +30,9 @@ func IsDeletedScope(req IsDeleted) func(db *gorm.DB) *gorm.DB {
 		if req.IsDeleted == nil {
 			return db.Unscoped()
 		}
-
-		if *req.IsDeleted == true {
+		if *req.IsDeleted {
 			return db.Unscoped().Where("deleted_at IS NOT NULL")
 		}
-
 		return db
 	}
 }
@@ -43,43 +44,35 @@ func SearchScope(req SearchRequest, fieldsToSearch ...string) func(db *gorm.DB) 
 		}
 
 		pattern := "%" + req.Search + "%"
-
-		var conditions []string
-		var args []any
+		conditions := make([]string, 0, len(fieldsToSearch))
+		args := make([]any, 0, len(fieldsToSearch))
 
 		for _, field := range fieldsToSearch {
 			conditions = append(conditions, fmt.Sprintf("%s ILIKE ?", field))
 			args = append(args, pattern)
 		}
 
-		orConditions := strings.Join(conditions, " OR ")
-		return db.Where(orConditions, args...)
+		return db.Where(strings.Join(conditions, " OR "), args...)
 	}
 }
 
-func FieldFilterScope(fieldFilters map[string]any) func(db *gorm.DB) *gorm.DB {
+func FieldFilterScope(filters map[string]any) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		for field, filterValue := range fieldFilters {
-
-			val := reflect.ValueOf(filterValue)
-			if !val.IsValid() || (val.Kind() == reflect.Ptr && val.IsNil()) || (val.Kind() == reflect.Interface && val.IsNil()) {
+		for field, val := range filters {
+			if val == nil {
 				continue
 			}
-
-			condition := fmt.Sprintf("%s = ?", field)
-			db.Where(condition, filterValue)
+			db = db.Where(fmt.Sprintf("%s = ?", field), val)
 		}
-
 		return db
 	}
 }
 
-func PreloadScope(modelsToPreload ...string) func(queryChain *gorm.DB) *gorm.DB {
-	return func(queryChain *gorm.DB) *gorm.DB {
-		for _, model := range modelsToPreload {
-			queryChain.Preload(model)
+func PreloadScope(relations ...string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		for _, rel := range relations {
+			db = db.Preload(rel)
 		}
-
-		return queryChain
+		return db
 	}
 }

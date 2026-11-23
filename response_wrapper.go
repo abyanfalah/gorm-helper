@@ -1,7 +1,6 @@
 package gormhelper
 
-type ResponseWrapper struct {
-}
+type ResponseWrapper struct{}
 
 type PaginationWrapper[T any] struct {
 	Total     int64 `json:"total"`
