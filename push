@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+# Exit immediately if any command fails
+set -e
+
+VERSION_FILE="./version"
+
+# 1. Verify the version file exists
+if [ ! -f "$VERSION_FILE" ]; then
+  echo "Error: $VERSION_FILE not found!"
+  exit 1
+fi
+
+# 2. Read current version and strip any whitespace/newlines
+CURRENT_VERSION=$(tr -d '[:space:]' < "$VERSION_FILE")
+
+# Handle optional 'v' prefix (e.g., v1.0.0 vs 1.0.0)
+PREFIX=""
+if [[ "$CURRENT_VERSION" == v* ]]; then
+  PREFIX="v"
+  CLEAN_VERSION="${CURRENT_VERSION#v}"
+else
+  CLEAN_VERSION="$CURRENT_VERSION"
+fi
+
+# 3. Split version into Major, Minor, Patch and increment Patch
+IFS='.' read -r MAJOR MINOR PATCH <<< "$CLEAN_VERSION"
+
+if [[ -z "$MAJOR" || -z "$MINOR" || -z "$PATCH" ]]; then
+  echo "Error: Invalid version format in $VERSION_FILE. Expected X.Y.Z, got '$CURRENT_VERSION'"
+  exit 1
+fi
+
+NEW_PATCH=$((PATCH + 1))
+NEW_VERSION="${PREFIX}${MAJOR}.${MINOR}.${NEW_PATCH}"
+
+echo "Bumping version: $CURRENT_VERSION -> $NEW_VERSION"
+
+# 4. Write the new version back to the ./version file
+echo "$NEW_VERSION" > "$VERSION_FILE"
+
+# 5. Stage, commit, tag, and push
+# Use provided commit message, or default to a release message
+COMMIT_MSG="${1:-Release $NEW_VERSION}"
+
+git add .
+git commit -m "$COMMIT_MSG"
+git tag "$NEW_VERSION"
+git push
+git push origin "$NEW_VERSION"
+
+echo "Successfully released and pushed $NEW_VERSION!"

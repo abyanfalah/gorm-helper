@@ -1,6 +1,9 @@
 package gormhelper
 
-import "github.com/google/uuid"
+import (
+	"github.com/gofiber/fiber/v3"
+	"github.com/google/uuid"
+)
 
 type IDNumberRequest struct {
 	ID int `json:"id" validate:"required"`
@@ -31,4 +34,8 @@ type SearchPaginationRequest struct {
 	PaginationRequest
 	SearchRequest
 	IsDeleted
+}
+
+func (s *SearchPaginationRequest) setFilters(c fiber.Ctx) {
+
 }
