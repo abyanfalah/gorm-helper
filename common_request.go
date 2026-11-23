@@ -1,6 +1,8 @@
 package gormhelper
 
 import (
+	"strings"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 )
@@ -37,5 +39,14 @@ type SearchPaginationRequest struct {
 }
 
 func (s *SearchPaginationRequest) setFilters(c fiber.Ctx) {
+	s.Page = fiber.Query(c, "page", 1)
+	s.Size = fiber.Query(c, "size", 10)
+	s.Search = strings.TrimSpace(c.Query("search"))
 
+	if s.Page < 1 {
+		s.Page = 1
+	}
+	if s.Size < 1 {
+		s.Size = 10
+	}
 }
