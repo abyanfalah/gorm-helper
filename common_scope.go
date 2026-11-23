@@ -2,6 +2,7 @@ package gormhelper
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"gorm.io/gorm"
@@ -56,14 +57,18 @@ func SearchScope(req SearchRequest, fieldsToSearch ...string) func(db *gorm.DB) 
 	}
 }
 
-func FieldFilterScope(filters map[string]any) func(db *gorm.DB) *gorm.DB {
+func FieldFilterScope(fieldFilters map[string]any) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		for field, val := range filters {
-			if val == nil {
+		for field, filterValue := range fieldFilters {
+			val := reflect.ValueOf(filterValue)
+			if !val.IsValid() || (val.Kind() == reflect.Ptr && val.IsNil()) || (val.Kind() == reflect.Interface && val.IsNil()) {
 				continue
 			}
-			db = db.Where(fmt.Sprintf("%s = ?", field), val)
+
+			condition := fmt.Sprintf("%s = ?", field)
+			db = db.Where(condition, filterValue)
 		}
+
 		return db
 	}
 }
