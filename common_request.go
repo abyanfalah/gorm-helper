@@ -38,7 +38,7 @@ type SearchPaginationRequest struct {
 	IsDeleted
 }
 
-func (s *SearchPaginationRequest) setFilters(c fiber.Ctx) {
+func (s *SearchPaginationRequest) SetFilters(c fiber.Ctx) {
 	s.Page = fiber.Query(c, "page", 1)
 	s.Size = fiber.Query(c, "size", 10)
 	s.Search = strings.TrimSpace(c.Query("search"))
